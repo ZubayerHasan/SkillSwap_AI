@@ -23,18 +23,41 @@ const Badge = ({ variant = "default", children, className = "" }) => {
 };
 
 export const ProficiencyBadge = ({ level }) => {
-  const variants = { 1: "muted", 2: "brand", 3: "purple" };
-  return <Badge variant={variants[level]}>{PROFICIENCY_LABELS[level] || "Unknown"}</Badge>;
+  // Hardcoded colors so they render correctly in both dark AND light themes
+  // (theme-variable `brand` maps to near-black in light mode, making text invisible)
+  const styles = {
+    1: "bg-slate-500/20 text-slate-400 dark:text-slate-300",
+    2: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+    3: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+  };
+  return (
+    <span className={`badge ${styles[level] || styles[1]}`}>
+      {PROFICIENCY_LABELS[level] || "Unknown"}
+    </span>
+  );
 };
 
 export const UrgencyBadge = ({ level }) => {
-  const variants = { 1: "muted", 2: "warning", 3: "danger" };
-  return <Badge variant={variants[level]}>{URGENCY_LABELS[level] || "Unknown"}</Badge>;
+  const styles = {
+    1: "bg-slate-500/20 text-slate-500 dark:text-slate-400",
+    2: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+    3: "bg-red-500/20 text-red-600 dark:text-red-400",
+  };
+  return (
+    <span className={`badge ${styles[level] || styles[1]}`}>
+      {URGENCY_LABELS[level] || "Unknown"}
+    </span>
+  );
 };
 
 export const TrustBadge = ({ score }) => {
-  const variant = score >= 70 ? "success" : score >= 40 ? "warning" : "danger";
-  return <Badge variant={variant}>⭐ {score}</Badge>;
+  const styles =
+    score >= 70
+      ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+      : score >= 40
+      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+      : "bg-red-500/20 text-red-600 dark:text-red-400";
+  return <span className={`badge ${styles}`}>⭐ {score}</span>;
 };
 
 export default Badge;

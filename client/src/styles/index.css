@@ -36,14 +36,15 @@
   --color-bg-elevated: 230 232 238;
   --color-border: 215 219 228;
   --color-border-subtle: 229 232 238;
-  --color-brand: 17 24 39;
-  --color-brand-hover: 55 65 81;
-  --color-brand-dim: 17 24 39;
-  --color-accent: 75 85 99;
-  --color-accent-dim: 75 85 99;
-  --color-warning: 120 113 108;
-  --color-danger: 75 85 99;
-  --color-success: 31 41 55;
+  /* Use a real indigo/blue for brand so text-brand is readable on bg-brand-dim */
+  --color-brand: 79 70 229;
+  --color-brand-hover: 67 56 202;
+  --color-brand-dim: 79 70 229;
+  --color-accent: 13 148 136;
+  --color-accent-dim: 13 148 136;
+  --color-warning: 217 119 6;
+  --color-danger: 220 38 38;
+  --color-success: 5 150 105;
   --color-text-primary: 17 24 39;
   --color-text-secondary: 75 85 99;
   --color-text-muted: 107 114 128;

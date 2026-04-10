@@ -173,7 +173,7 @@ const DiscoveryPage = () => {
               <div className="text-text-muted text-xl">↔</div>
               <div className="text-center">
                 <p className="text-xs text-text-muted mb-1">They offer</p>
-                <div className="px-3 py-2 bg-brand-dim border border-brand/20 rounded-lg text-sm text-brand font-medium">{requestTarget.skillOffer.displayName}</div>
+                <div className="px-3 py-2 bg-blue-500/15 border border-blue-500/30 rounded-lg text-sm text-blue-600 dark:text-blue-400 font-medium">{requestTarget.skillOffer.displayName}</div>
               </div>
             </div>
             <div>
