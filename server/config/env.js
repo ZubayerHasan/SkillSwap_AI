@@ -4,6 +4,7 @@ require("dotenv").config();
 const envSchema = z.object({
   PORT: z.string().default("5000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  TRUST_PROXY: z.string().default("1"),
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
   REDIS_PASSWORD: z.string().optional().default(""),

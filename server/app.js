@@ -10,6 +10,9 @@ const { generalLimiter } = require("./middleware/rateLimit.middleware");
 
 const app = express();
 
+// Required in production behind Render/Cloud load balancers so rate limiting uses real client IP.
+app.set("trust proxy", Number(env.TRUST_PROXY) || 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
