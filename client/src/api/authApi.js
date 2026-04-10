@@ -1,0 +1,12 @@
+import axiosInstance from "./axiosInstance";
+import axios from "axios";
+
+export const registerUser = (data) => axiosInstance.post("/auth/register", data);
+export const loginUser = (data) => axiosInstance.post("/auth/login", data);
+export const logoutUser = () => axiosInstance.post("/auth/logout");
+export const refreshToken = () => axios.post("/api/auth/refresh", {}, { withCredentials: true });
+export const verifyEmail = (token) => axiosInstance.get(`/auth/verify-email?token=${token}`);
+export const resendVerification = (email) => axiosInstance.post("/auth/resend-verification", { email });
+export const forgotPassword = (email) => axiosInstance.post("/auth/forgot-password", { email });
+export const resetPassword = (data) => axiosInstance.post("/auth/reset-password", data);
+export const getMe = () => axiosInstance.get("/auth/me");
