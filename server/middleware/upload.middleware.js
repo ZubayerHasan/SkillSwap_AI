@@ -35,7 +35,7 @@ try {
   const cfg = cloudinary.config();
 
   // Validate cloud name format (must be alphanumeric/underscores only)
-  if (cfg.cloud_name && cfg.api_key && /^[a-z0-9_]+$/i.test(cfg.cloud_name)) {
+  if (cfg.cloud_name && cfg.api_key && /^[a-z0-9_-]+$/i.test(cfg.cloud_name)) {
     avatarStorage = new CloudinaryStorage({
       cloudinary,
       params: {

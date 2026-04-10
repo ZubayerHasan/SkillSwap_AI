@@ -43,7 +43,8 @@ const exchangeRequestSchema = z.object({
   receiverId: z.string().min(1),
   offeredSkillId: z.string().min(1),
   requestedSkillId: z.string().min(1),
-  proposedTime: z.string().datetime(),
+  // datetime-local inputs give "2026-04-12T10:00" without timezone — allow any ISO-like string
+  proposedTime: z.string().min(1, "Proposed time is required"),
   message: z.string().max(300).optional().default(""),
 });
 
