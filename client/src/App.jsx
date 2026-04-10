@@ -10,7 +10,7 @@ import { setCredentials, setLoading } from "./store/slices/authSlice";
 import { selectCurrentUser, selectIsAuthenticated } from "./store/slices/authSlice";
 import { setProfile } from "./store/slices/profileSlice";
 import { useSocket } from "./hooks/useSocket";
-import axios from "axios";
+import axiosInstance from "./api/axiosInstance";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,10 +35,10 @@ const AppInner = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data } = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+        const { data } = await axiosInstance.post("/auth/refresh", {});
         if (data?.data?.accessToken) {
           // Get user profile
-          const profileRes = await axios.get("/api/profile/me", {
+          const profileRes = await axiosInstance.get("/profile/me", {
             headers: { Authorization: `Bearer ${data.data.accessToken}` },
           });
           dispatch(setCredentials({
