@@ -2,8 +2,14 @@ import axios from "axios";
 import { store } from "../store";
 import { setAccessToken, logout } from "../store/slices/authSlice";
 
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "";
+const normalizedBaseUrl = rawBaseUrl.replace(/\/+$/, "");
+const apiBasePath = normalizedBaseUrl
+  ? (normalizedBaseUrl.endsWith("/api") ? normalizedBaseUrl : `${normalizedBaseUrl}/api`)
+  : "/api";
+
 const axiosInstance = axios.create({
-  baseURL: "/api",
+  baseURL: apiBasePath,
   withCredentials: true, // essential for HttpOnly cookie refresh token
   timeout: 15000,
 });
@@ -47,7 +53,7 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+        const { data } = await axios.post(`${apiBasePath}/auth/refresh`, {}, { withCredentials: true });
         const newToken = data.data.accessToken;
         store.dispatch(setAccessToken(newToken));
         processQueue(null, newToken);
