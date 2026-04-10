@@ -1,0 +1,23 @@
+{
+  // Disable VS Code's built-in CSS validator — it flags @tailwind, @apply, etc. as errors
+  // because it only understands standard CSS, not PostCSS/Tailwind directives.
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+
+  // Tell the Tailwind CSS IntelliSense extension which files to scan
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "javascript"
+  },
+
+  // Treat .css files as PostCSS so directives like @tailwind are understood
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+
+  // Tailwind IntelliSense: show completions inside className strings
+  "editor.quickSuggestions": {
+    "strings": "on"
+  }
+}
