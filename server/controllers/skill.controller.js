@@ -8,6 +8,12 @@ const { normalizeSkillName } = require("../utils/skillNormalizer");
 
 const MAX_SKILLS = 10;
 
+const sanitizeOptionalTaxonomyId = (value) => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+};
+
 // --- SKILL OFFERS ---
 
 // POST /api/skills/offer
@@ -16,6 +22,7 @@ const createOffer = asyncHandler(async (req, res) => {
   if (count >= MAX_SKILLS) throw new ApiError(400, `Maximum ${MAX_SKILLS} offered skills allowed`);
 
   const { skillName, category, proficiencyLevel, description, skillTaxonomyId } = req.body;
+  const sanitizedTaxonomyId = sanitizeOptionalTaxonomyId(skillTaxonomyId);
   const normalizedName = normalizeSkillName(skillName);
 
   const existing = await SkillOffer.findOne({ userId: req.user._id, skillName: normalizedName, isActive: true });
@@ -28,7 +35,7 @@ const createOffer = asyncHandler(async (req, res) => {
     category,
     proficiencyLevel,
     description,
-    skillTaxonomyId,
+    skillTaxonomyId: sanitizedTaxonomyId,
   });
 
   res.status(201).json(new ApiResponse(201, { offer }, "Skill offer created"));
@@ -71,6 +78,7 @@ const createNeed = asyncHandler(async (req, res) => {
   if (count >= MAX_SKILLS) throw new ApiError(400, `Maximum ${MAX_SKILLS} skill needs allowed`);
 
   const { skillName, category, urgency, description, skillTaxonomyId } = req.body;
+  const sanitizedTaxonomyId = sanitizeOptionalTaxonomyId(skillTaxonomyId);
   const normalizedName = normalizeSkillName(skillName);
 
   const existing = await SkillNeed.findOne({ userId: req.user._id, skillName: normalizedName, isActive: true });
@@ -83,7 +91,7 @@ const createNeed = asyncHandler(async (req, res) => {
     category,
     urgency,
     description,
-    skillTaxonomyId,
+    skillTaxonomyId: sanitizedTaxonomyId,
   });
 
   res.status(201).json(new ApiResponse(201, { need }, "Skill need created"));
