@@ -45,9 +45,10 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     avatarUrl = req.file.path;
     publicId = req.file.filename;
 
-    // If it's a local file (not a full URL), construct serving path
+    // If it's a local file (not a full URL), construct absolute serving path
     if (!avatarUrl.startsWith("http")) {
-      avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      const baseUrl = env.BACKEND_URL.replace(/\/+$/, "");
+      avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
     }
 
     const user = await User.findByIdAndUpdate(

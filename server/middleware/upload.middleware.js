@@ -65,7 +65,7 @@ try {
   }
 } catch (err) {
   console.error("📸 Cloudinary initialization error:", err.message);
-  console.log("📸 Falling back to local disk storage for uploads");
+  console.log("📸 [DIAGNOSTIC] Falling back to local disk storage. Please check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your environment variables.");
 }
 
 const fileFilter = (req, file, cb) => {
