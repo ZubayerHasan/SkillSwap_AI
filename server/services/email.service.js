@@ -2,7 +2,7 @@ const mailer = require("../config/mailer");
 const env = require("../config/env");
 
 const sendVerificationEmail = async (to, name, token) => {
-  const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${env.CLIENT_URL}/verify-email?token=${token}&email=${to}`;
   const mailOptions = {
     from: `"SkillSwap AI" <${env.EMAIL_FROM}>`,
     to,

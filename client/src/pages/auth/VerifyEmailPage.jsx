@@ -6,14 +6,15 @@ import Button from "../../components/common/Button";
 const VerifyEmailPage = () => {
   const [params] = useSearchParams();
   const token = params.get("token");
+  const email = params.get("email");
   const [state, setState] = useState("loading"); // loading | success | error
 
   useEffect(() => {
     if (!token) { setState("error"); return; }
-    verifyEmail(token)
+    verifyEmail(token, email)
       .then(() => setState("success"))
       .catch(() => setState("error"));
-  }, [token]);
+  }, [token, email]);
 
   return (
     <div className="min-h-screen bg-background-primary flex items-center justify-center p-4">

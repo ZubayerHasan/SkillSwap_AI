@@ -39,16 +39,27 @@ const register = asyncHandler(async (req, res) => {
 
 // GET /api/auth/verify-email?token=xxx
 const verifyEmail = asyncHandler(async (req, res) => {
-  const { token } = req.query;
+  const { token, email } = req.query;
   if (!token) throw new ApiError(400, "Verification token is required");
 
+  // First, try to find user by token
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  const user = await User.findOne({
+  let user = await User.findOne({
     emailVerificationToken: hashedToken,
     emailVerificationTokenExpiry: { $gt: new Date() },
   });
 
-  if (!user) throw new ApiError(400, "Invalid or expired verification token. Please request a new one.");
+  // If not found by token, check if they are already verified via email
+  if (!user && email) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser?.isVerified) {
+      return res.status(200).json(new ApiResponse(200, {}, "Email already verified. You can log in."));
+    }
+  }
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired verification token. Please request a new one.");
+  }
 
   // Credit starter bonus
   user.isVerified = true;
