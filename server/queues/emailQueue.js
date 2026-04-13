@@ -2,7 +2,9 @@ const Bull = require("bull");
 const env = require("../config/env");
 const { sendVerificationEmail, sendPasswordResetEmail } = require("../services/email.service");
 
-const emailQueue = new Bull("email-queue", env.REDIS_URL);
+const emailQueue = new Bull("email-queue", env.REDIS_URL, {
+  prefix: `${env.NODE_ENV}:bull`,
+});
 
 emailQueue.process("verification", async (job) => {
   const { to, name, token } = job.data;

@@ -4,7 +4,9 @@ const Notification = require("../models/Notification.model");
 const User = require("../models/User.model");
 const { sendNotificationDigestEmail } = require("../services/email.service");
 
-const notificationQueue = new Bull("notification-queue", env.REDIS_URL);
+const notificationQueue = new Bull("notification-queue", env.REDIS_URL, {
+  prefix: `${env.NODE_ENV}:bull`,
+});
 
 // Process: send email digest for notifications unread after 2h
 notificationQueue.process("email-digest", async (job) => {
