@@ -34,8 +34,10 @@ try {
   const cloudinary = require("../config/cloudinary");
   const cfg = cloudinary.config();
 
+  const isCloudinaryConfigured = cfg.cloud_name && cfg.api_key && cfg.api_secret;
+
   // Validate cloud name format (must be alphanumeric/underscores only)
-  if (cfg.cloud_name && cfg.api_key && /^[a-z0-9_-]+$/i.test(cfg.cloud_name)) {
+  if (isCloudinaryConfigured && /^[a-z0-9_-]+$/i.test(cfg.cloud_name)) {
     avatarStorage = new CloudinaryStorage({
       cloudinary,
       params: {
@@ -53,12 +55,17 @@ try {
       },
     });
 
-    console.log("📸 Using Cloudinary storage for uploads");
+    console.log(`📸 Using Cloudinary storage for uploads (Cloud: ${cfg.cloud_name})`);
   } else {
-    console.log(`📸 Cloudinary cloud_name "${cfg.cloud_name}" appears invalid, using local disk storage`);
+    if (!isCloudinaryConfigured) {
+      console.log("📸 Cloudinary environment variables missing, using local disk storage");
+    } else {
+      console.log(`📸 Cloudinary cloud_name "${cfg.cloud_name}" appears invalid (regex check), using local disk storage`);
+    }
   }
 } catch (err) {
-  console.log("📸 Cloudinary unavailable, using local disk storage for uploads");
+  console.error("📸 Cloudinary initialization error:", err.message);
+  console.log("📸 Falling back to local disk storage for uploads");
 }
 
 const fileFilter = (req, file, cb) => {

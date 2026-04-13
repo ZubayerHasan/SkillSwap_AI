@@ -61,16 +61,13 @@ userSchema.methods.comparePassword = async function (candidate) {
 };
 
 // Compute profile completeness
-userSchema.methods.computeProfileCompleteness = function (hasOffer = false, hasNeed = false) {
+userSchema.methods.computeProfileCompleteness = function () {
   const fields = [
     !!this.name,
     !!this.bio,
     !!this.university,
     !!this.department,
     !!(this.avatar && this.avatar.url),
-    !!(this.availability && this.availability.length > 0),
-    hasOffer,
-    hasNeed,
   ];
   const filled = fields.filter(Boolean).length;
   return Math.round((filled / fields.length) * 100);

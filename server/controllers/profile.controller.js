@@ -7,9 +7,7 @@ const ApiResponse = require("../utils/ApiResponse");
 
 const computeAndSaveCompleteness = async (userId) => {
   const user = await User.findById(userId);
-  const hasOffer = (await SkillOffer.countDocuments({ userId, isActive: true })) > 0;
-  const hasNeed = (await SkillNeed.countDocuments({ userId, isActive: true })) > 0;
-  const completeness = user.computeProfileCompleteness(hasOffer, hasNeed);
+  const completeness = user.computeProfileCompleteness();
   user.profileCompleteness = completeness;
   await user.save();
   return completeness;
@@ -39,31 +37,38 @@ const updateProfile = asyncHandler(async (req, res) => {
 const uploadAvatar = asyncHandler(async (req, res) => {
   if (!req.file) throw new ApiError(400, "No file uploaded");
 
-  // Determine avatar URL: Cloudinary gives a full URL in req.file.path,
-  // local disk storage gives a relative filesystem path
-  let avatarUrl = req.file.path;
-  let publicId = req.file.filename;
+  let avatarUrl, publicId;
 
-  // If it's a local file (not a full URL), construct serving path
-  if (!avatarUrl.startsWith("http")) {
-    avatarUrl = `/uploads/avatars/${req.file.filename}`;
-  }
+  try {
+    // Determine avatar URL: Cloudinary gives a full URL in req.file.path,
+    // local disk storage gives a relative filesystem path
+    avatarUrl = req.file.path;
+    publicId = req.file.filename;
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      avatar: {
-        cloudinaryPublicId: publicId,
-        url: avatarUrl,
+    // If it's a local file (not a full URL), construct serving path
+    if (!avatarUrl.startsWith("http")) {
+      avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        avatar: {
+          cloudinaryPublicId: publicId,
+          url: avatarUrl,
+        },
       },
-    },
-    { new: true }
-  ).select("-password");
+      { new: true }
+    ).select("-password");
 
-  const completeness = await computeAndSaveCompleteness(req.user._id);
-  user.profileCompleteness = completeness;
+    const completeness = await computeAndSaveCompleteness(req.user._id);
+    user.profileCompleteness = completeness;
 
-  res.status(200).json(new ApiResponse(200, { avatar: user.avatar, profileCompleteness: completeness }, "Avatar uploaded successfully"));
+    res.status(200).json(new ApiResponse(200, { avatar: user.avatar, profileCompleteness: completeness }, "Avatar uploaded successfully"));
+  } catch (error) {
+    console.error("❌ Avatar upload processing error:", error);
+    throw new ApiError(500, "Failed to process uploaded avatar");
+  }
 });
 
 // GET /api/profile/:userId (public)
