@@ -1,1 +1,1 @@
-# SkillSwap
+# SkillSwap-AI
