@@ -26,9 +26,13 @@ const AppInner = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   useEffect(() => {
-    const theme = localStorage.getItem("skillswap-theme") || "dark";
-    document.documentElement.classList.toggle("theme-light", theme === "light");
-    document.documentElement.dataset.theme = theme;
+    const theme = localStorage.getItem("skillswap-theme") || "system";
+    let resolved = theme;
+    if (theme === "system") {
+      resolved = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    document.documentElement.classList.toggle("theme-light", resolved === "light");
+    document.documentElement.dataset.theme = resolved;
   }, []);
 
   // Auto-init: try to refresh token on app load

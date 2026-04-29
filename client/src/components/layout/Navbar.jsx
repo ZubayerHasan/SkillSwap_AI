@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectIsAuthenticated } from "../../store/slices/authSlice";
@@ -39,10 +39,12 @@ const Navbar = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem("skillswap-theme") || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem("skillswap-theme") || "system");
+  const [themeOpen, setThemeOpen] = useState(false);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
   const mobileRef = useRef(null);
+  const themeRef = useRef(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -50,18 +52,35 @@ const Navbar = () => {
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
       if (mobileRef.current && !mobileRef.current.contains(e.target)) setMobileOpen(false);
+      if (themeRef.current && !themeRef.current.contains(e.target)) setThemeOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const applyTheme = useCallback((chosen) => {
+    let resolved = chosen;
+    if (chosen === "system") {
+      resolved = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    document.documentElement.classList.toggle("theme-light", resolved === "light");
+    document.documentElement.dataset.theme = resolved;
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("skillswap-theme", theme);
-    document.documentElement.classList.toggle("theme-light", theme === "light");
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
+    applyTheme(theme);
 
-  const isLight = theme === "light";
+    // Watch system preference changes when in system mode
+    if (theme === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: light)");
+      const onChange = () => applyTheme("system");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    }
+  }, [theme, applyTheme]);
+
+  const isLight = theme === "light" || (theme === "system" && window.matchMedia("(prefers-color-scheme: light)").matches);
 
   const handleMarkAllRead = async () => {
     dispatch(markAllReadLocal());
@@ -73,7 +92,25 @@ const Navbar = () => {
     await markNotificationRead(id).catch(() => { });
   };
 
-  const themeLabel = useMemo(() => (isLight ? "Light mode" : "Dark mode"), [isLight]);
+  const THEME_OPTIONS = [
+    { value: "dark", label: "Dark", icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    )},
+    { value: "light", label: "Light", icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+      </svg>
+    )},
+    { value: "system", label: "System", icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    )},
+  ];
+  const currentThemeOpt = THEME_OPTIONS.find(o => o.value === theme) || THEME_OPTIONS[0];
+  const themeLabel = useMemo(() => `Theme: ${currentThemeOpt.label}`, [currentThemeOpt]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 h-16 border-b border-border/80 bg-background-primary/80 backdrop-blur-xl">
@@ -121,19 +158,46 @@ const Navbar = () => {
 
         {isAuthenticated && (
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
-            <button
-              type="button"
-              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              className="flex items-center gap-2 rounded-full border border-border bg-background-card px-2 py-1.5 hover:bg-background-elevated transition-colors"
-              aria-label={themeLabel}
-              title={themeLabel}
-            >
-              <span className={`text-[11px] font-semibold px-1.5 ${isLight ? "text-text-muted" : "text-text-primary"}`}>B</span>
-              <span className="relative w-11 h-6 rounded-full border border-border bg-background-elevated flex items-center px-0.5 transition-colors">
-                <span className={`w-5 h-5 rounded-full shadow-sm transition-transform duration-300 ${isLight ? "translate-x-5 bg-text-primary" : "translate-x-0 bg-white"}`} />
-              </span>
-              <span className={`text-[11px] font-semibold px-1.5 ${isLight ? "text-text-primary" : "text-text-muted"}`}>W</span>
-            </button>
+            {/* 3-way Theme Picker */}
+            <div className="relative" ref={themeRef}>
+              <button
+                id="theme-toggle-btn"
+                type="button"
+                onClick={() => setThemeOpen(v => !v)}
+                className="flex items-center gap-1.5 rounded-xl border border-border bg-background-card px-2.5 py-2 hover:bg-background-elevated transition-colors text-text-secondary hover:text-text-primary"
+                aria-label={themeLabel}
+                title={themeLabel}
+              >
+                {currentThemeOpt.icon}
+                <svg className="w-3 h-3 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {themeOpen && (
+                <div className="absolute right-0 top-11 w-36 card shadow-card border border-border overflow-hidden z-50 animate-fade-slide-up">
+                  {THEME_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      id={`theme-opt-${opt.value}`}
+                      onClick={() => { setTheme(opt.value); setThemeOpen(false); }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                        theme === opt.value
+                          ? "bg-brand/10 text-brand font-semibold"
+                          : "text-text-secondary hover:text-text-primary hover:bg-background-elevated"
+                      }`}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                      {theme === opt.value && (
+                        <svg className="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Notification Bell */}
             <div className="relative" ref={notifRef}>
@@ -210,6 +274,7 @@ const Navbar = () => {
                   </div>
                   {[
                     { to: "/profile/me", label: "My Profile" },
+                    ...(user?.role === "admin" ? [{ to: "/admin", label: "⚙️ Admin Dashboard" }] : []),
                   ].map((item) => (
                     <Link
                       key={item.to}
@@ -267,19 +332,40 @@ const Navbar = () => {
 
         {!isAuthenticated && (
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              className="flex items-center gap-2 rounded-full border border-border bg-background-card px-2 py-1.5 hover:bg-background-elevated transition-colors"
-              aria-label={themeLabel}
-              title={themeLabel}
-            >
-              <span className={`text-[11px] font-semibold px-1.5 ${isLight ? "text-text-muted" : "text-text-primary"}`}>B</span>
-              <span className="relative w-11 h-6 rounded-full border border-border bg-background-elevated flex items-center px-0.5 transition-colors">
-                <span className={`w-5 h-5 rounded-full shadow-sm transition-transform duration-300 ${isLight ? "translate-x-5 bg-text-primary" : "translate-x-0 bg-white"}`} />
-              </span>
-              <span className={`text-[11px] font-semibold px-1.5 ${isLight ? "text-text-primary" : "text-text-muted"}`}>W</span>
-            </button>
+            {/* 3-way Theme Picker (unauthenticated) */}
+            <div className="relative" ref={themeRef}>
+              <button
+                id="theme-toggle-btn-guest"
+                type="button"
+                onClick={() => setThemeOpen(v => !v)}
+                className="flex items-center gap-1.5 rounded-xl border border-border bg-background-card px-2.5 py-2 hover:bg-background-elevated transition-colors text-text-secondary hover:text-text-primary"
+                aria-label={themeLabel}
+                title={themeLabel}
+              >
+                {currentThemeOpt.icon}
+                <svg className="w-3 h-3 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {themeOpen && (
+                <div className="absolute right-0 top-11 w-36 card shadow-card border border-border overflow-hidden z-50 animate-fade-slide-up">
+                  {THEME_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setTheme(opt.value); setThemeOpen(false); }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                        theme === opt.value
+                          ? "bg-brand/10 text-brand font-semibold"
+                          : "text-text-secondary hover:text-text-primary hover:bg-background-elevated"
+                      }`}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Link to="/login" className="btn-ghost !py-2 !px-4 text-sm">Sign in</Link>
             <Link to="/register" className="btn-primary !py-2 !px-4 text-sm">Get Started</Link>
           </div>
