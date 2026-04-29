@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["student", "moderator", "admin"], default: "student" },
+    isSuspended: { type: Boolean, default: false },
+    suspensionReason: { type: String, default: "" },
     trustScore: { type: Number, default: 50, min: 0, max: 100 },
     currentBalance: { type: Number, default: 5, min: 0 },
     profileCompleteness: { type: Number, default: 0 },
