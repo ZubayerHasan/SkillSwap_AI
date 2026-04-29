@@ -15,6 +15,15 @@ const skillNeedSchema = new mongoose.Schema(
     },
     description: { type: String, default: "", maxlength: 1000 },
     isActive: { type: Boolean, default: true },
+
+    // Broadcast fields (F10)
+    isBroadcast: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ["open", "fulfilled", "expired"],
+      default: "open",
+    },
+    expiresAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -22,6 +31,7 @@ const skillNeedSchema = new mongoose.Schema(
 skillNeedSchema.index({ userId: 1 });
 skillNeedSchema.index({ skillTaxonomyId: 1 });
 skillNeedSchema.index({ category: 1 });
+skillNeedSchema.index({ isBroadcast: 1, status: 1, urgency: -1, createdAt: -1 });
 
 const SkillNeed = mongoose.model("SkillNeed", skillNeedSchema);
 module.exports = SkillNeed;
