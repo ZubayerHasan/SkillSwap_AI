@@ -18,3 +18,10 @@ export const getTaxonomy = (q) => axiosInstance.get(`/skills/taxonomy${q ? `?q=$
 // Availability
 export const updateAvailability = (data) => axiosInstance.put("/availability", data);
 export const getMyAvailability = () => axiosInstance.get("/availability/me");
+
+// Broadcasts (F10)
+export const createBroadcast = (data) => axiosInstance.post("/skills/broadcast", data);
+export const getBroadcasts = (params) => axiosInstance.get("/skills/broadcasts", { params });
+export const getMyBroadcasts = () => axiosInstance.get("/skills/broadcasts/mine");
+export const fulfillBroadcast = (id) => axiosInstance.patch(`/skills/broadcasts/${id}/fulfill`);
+

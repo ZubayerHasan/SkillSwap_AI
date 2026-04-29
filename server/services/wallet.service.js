@@ -1,6 +1,7 @@
 const TransactionLedger = require("../models/TransactionLedger.model");
 const User = require("../models/User.model");
 const ApiError = require("../utils/ApiError");
+const mongoose = require("mongoose");
 
 const creditStarterBonus = async (userId, session) => {
   const amount = 5;
@@ -71,4 +72,48 @@ const getPaginatedTransactions = async (userId, cursor, limit = 20) => {
   return { transactions: results, nextCursor };
 };
 
-module.exports = { creditStarterBonus, getWalletSummary, getPaginatedTransactions };
+// Atomic credit gift: debit sender, credit recipient, two ledger entries
+const sendCredits = async (senderId, recipientId, amount, message) => {
+  if (amount < 1 || amount > 10) throw new ApiError(400, "Amount must be between 1 and 10 credits");
+  if (senderId.toString() === recipientId.toString()) throw new ApiError(400, "Cannot send credits to yourself");
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const sender = await User.findById(senderId).session(session);
+    if (!sender) throw new ApiError(404, "Sender not found");
+    if (sender.currentBalance < amount) throw new ApiError(400, "Insufficient credits");
+
+    const recipient = await User.findById(recipientId).session(session);
+    if (!recipient) throw new ApiError(404, "Recipient not found");
+
+    const noteForSender = message
+      ? `Gift to ${recipient.name}: "${message}"`
+      : `Gift to ${recipient.name}`;
+    const noteForRecipient = message
+      ? `Gift from ${sender.name}: "${message}"`
+      : `Gift from ${sender.name}`;
+
+    await TransactionLedger.create(
+      [{ userId: senderId, type: "gift_sent", amount: -amount, counterpartyId: recipientId, note: noteForSender }],
+      { session }
+    );
+    await TransactionLedger.create(
+      [{ userId: recipientId, type: "gift_received", amount, counterpartyId: senderId, note: noteForRecipient }],
+      { session }
+    );
+
+    await User.findByIdAndUpdate(senderId, { $inc: { currentBalance: -amount } }, { session });
+    await User.findByIdAndUpdate(recipientId, { $inc: { currentBalance: amount } }, { session });
+
+    await session.commitTransaction();
+    return { senderBalance: sender.currentBalance - amount };
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
+  }
+};
+
+module.exports = { creditStarterBonus, getWalletSummary, getPaginatedTransactions, sendCredits };
