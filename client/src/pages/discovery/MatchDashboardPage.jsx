@@ -1,13 +1,32 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { getSmartMatches } from "../../api/matchApi";
+import { createExchangeRequest } from "../../api/walletApi";
 
 const scoreToPercent = (score) => Math.min(100, Math.round((score / 100) * 100));
 
+const getDefaultProposedTime = () => {
+  const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  date.setMinutes(0, 0, 0);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const MatchDashboardPage = () => {
+  const navigate = useNavigate();
+
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [limit, setLimit] = useState(20);
+  const [submittingId, setSubmittingId] = useState(null);
 
   const fetchMatches = async () => {
     try {
@@ -49,6 +68,58 @@ const MatchDashboardPage = () => {
 
     return { total, reciprocal, avgScore };
   }, [matches]);
+
+  const handleRequestExchange = async (match) => {
+    if (!match?.reciprocalOffer?._id) {
+      toast.error("This match is not ready for exchange yet because your offered skill is missing.");
+      return;
+    }
+
+    if (!match?.matchedOffer?._id) {
+      toast.error("The requested skill could not be identified.");
+      return;
+    }
+
+    const proposedTime = window.prompt(
+      "Enter proposed time in this format: YYYY-MM-DDTHH:mm",
+      getDefaultProposedTime()
+    );
+
+    if (proposedTime === null) return;
+
+    if (!proposedTime.trim()) {
+      toast.error("Proposed time is required.");
+      return;
+    }
+
+    const message =
+      window.prompt(
+        "Optional message for the exchange request:",
+        `Hi ${match.name}, I'd like to exchange skills with you.`
+      ) || "";
+
+    try {
+      setSubmittingId(match.userId);
+
+      await createExchangeRequest({
+        receiverId: match.userId,
+        offeredSkillId: match.reciprocalOffer._id,
+        requestedSkillId: match.matchedOffer._id,
+        proposedTime,
+        message,
+      });
+
+      toast.success("Exchange request sent successfully!");
+      navigate("/exchanges");
+    } catch (err) {
+      console.error("Failed to create exchange request:", err);
+      toast.error(
+        err?.response?.data?.message || "Failed to send exchange request."
+      );
+    } finally {
+      setSubmittingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
@@ -132,6 +203,9 @@ const MatchDashboardPage = () => {
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {matches.map((match) => {
               const percent = scoreToPercent(match.totalScore || 0);
+              const canRequestExchange =
+                Boolean(match?.reciprocalOffer?._id) &&
+                Boolean(match?.matchedOffer?._id);
 
               return (
                 <div
@@ -281,8 +355,20 @@ const MatchDashboardPage = () => {
                       View Profile
                     </button>
 
-                    <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                      Request Exchange
+                    <button
+                      onClick={() => handleRequestExchange(match)}
+                      disabled={!canRequestExchange || submittingId === match.userId}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
+                        !canRequestExchange || submittingId === match.userId
+                          ? "cursor-not-allowed bg-slate-400"
+                          : "bg-slate-900 hover:bg-slate-800"
+                      }`}
+                    >
+                      {submittingId === match.userId
+                        ? "Sending..."
+                        : canRequestExchange
+                        ? "Request Exchange"
+                        : "Need Reciprocal Offer"}
                     </button>
                   </div>
                 </div>
