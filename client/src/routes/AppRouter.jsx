@@ -21,6 +21,7 @@ import MatchDashboardPage from "../pages/discovery/MatchDashboardPage";
 import WalletPage from "../pages/wallet/WalletPage";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import ExchangesPage from "../pages/exchanges/ExchangesPage";
+import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 
 const AppRouter = () => (
   <Routes>
@@ -43,6 +44,7 @@ const AppRouter = () => (
     <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
     <Route path="/exchanges" element={<ProtectedRoute><ExchangesPage /></ProtectedRoute>} />
+    <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
 
     {/* Redirects */}
     <Route path="/" element={<Navigate to="/dashboard" replace />} />

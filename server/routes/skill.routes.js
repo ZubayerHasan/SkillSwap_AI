@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { createOffer, getMyOffers, updateOffer, deleteOffer, createNeed, getMyNeeds, updateNeed, deleteNeed, getTaxonomy } = require("../controllers/skill.controller");
+const {
+  createOffer, getMyOffers, updateOffer, deleteOffer,
+  createNeed, getMyNeeds, updateNeed, deleteNeed,
+  getTaxonomy,
+  createBroadcast, getBroadcasts, fulfillBroadcast, getMyBroadcasts,
+} = require("../controllers/skill.controller");
 const { authenticate } = require("../middleware/auth.middleware");
 const { requireVerified } = require("../middleware/verified.middleware");
 const { validate } = require("../middleware/validate.middleware");
@@ -8,7 +13,7 @@ const { skillOfferSchema, skillNeedSchema } = require("../validators/skill.valid
 
 router.use(authenticate, requireVerified);
 
-// Taxonomy (public-ish, needs auth only)
+// Taxonomy (auth only)
 router.get("/taxonomy", getTaxonomy);
 
 // Offers
@@ -22,5 +27,11 @@ router.post("/need", validate(skillNeedSchema), createNeed);
 router.get("/need/me", getMyNeeds);
 router.put("/need/:id", updateNeed);
 router.delete("/need/:id", deleteNeed);
+
+// Broadcasts (F10)
+router.post("/broadcast", createBroadcast);
+router.get("/broadcasts", getBroadcasts);
+router.get("/broadcasts/mine", getMyBroadcasts);
+router.patch("/broadcasts/:id/fulfill", fulfillBroadcast);
 
 module.exports = router;
