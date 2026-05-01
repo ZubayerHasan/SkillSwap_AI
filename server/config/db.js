@@ -35,7 +35,10 @@ const connectDB = async () => {
     });
   } catch (err) {
     console.error(`❌ MongoDB connection error: ${err.message}`);
-    process.exit(1);
+    console.warn("Continuing without database connection; retrying in background");
+    // Do not exit the process here. Allow the server to start and let
+    // mongoose handle reconnection attempts according to its internal logic.
+    return;
   }
 };
 
