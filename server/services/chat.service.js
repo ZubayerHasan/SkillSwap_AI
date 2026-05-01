@@ -13,7 +13,7 @@ const buildParticipantKey = (userA, userB) => [String(userA), String(userB)].sor
 
 const populateConversation = async (conversation) => conversation.populate([
   { path: "participantIds", select: "name email avatar university trustScore profileCompleteness" },
-  { path: "lastMessageId", select: "body senderId createdAt messageType" },
+  { path: "lastMessageId", select: "body senderId createdAt messageType attachments" },
 ]);
 
 const getOrCreateConversation = async ({ userId, participantId }) => {
@@ -41,7 +41,7 @@ const listConversations = async (userId) => {
     .sort({ lastMessageAt: -1, updatedAt: -1 })
     .populate([
       { path: "participantIds", select: "name email avatar university trustScore profileCompleteness" },
-      { path: "lastMessageId", select: "body senderId createdAt messageType" },
+      { path: "lastMessageId", select: "body senderId createdAt messageType attachments" },
     ]);
 
   const unreadCounts = await ChatMessage.aggregate([
@@ -67,7 +67,7 @@ const listConversations = async (userId) => {
 const getConversationMessages = async ({ userId, conversationId }) => {
   const conversation = await ChatConversation.findOne({ _id: conversationId, participantIds: userId }).populate([
     { path: "participantIds", select: "name email avatar university trustScore profileCompleteness" },
-    { path: "lastMessageId", select: "body senderId createdAt messageType" },
+    { path: "lastMessageId", select: "body senderId createdAt messageType attachments" },
   ]);
 
   if (!conversation) {
@@ -118,7 +118,78 @@ const sendMessage = async ({ userId, conversationId, body }) => {
 
   await conversation.populate([
     { path: "participantIds", select: "name email avatar university trustScore profileCompleteness" },
-    { path: "lastMessageId", select: "body senderId createdAt messageType" },
+    { path: "lastMessageId", select: "body senderId createdAt messageType attachments" },
+  ]);
+
+  const populatedMessage = await message.populate({ path: "senderId", select: "name avatar university trustScore" });
+  const conversationObject = conversation.toObject();
+  const messageObject = populatedMessage.toObject();
+
+  emitConversationUpdate(conversationObject, messageObject);
+
+  return { conversation: conversationObject, message: messageObject };
+};
+
+const buildMediaAttachmentFromFile = (file) => {
+  if (!file) return null;
+
+  // `multer-storage-cloudinary` sets `path` to the URL and `filename` to the Cloudinary public_id.
+  // Local disk storage sets `path` to a filesystem path.
+  const url = file.path ? String(file.path) : null;
+  if (!url) return null;
+
+  return {
+    url,
+    publicId: file.filename || null,
+    resourceType: file.resource_type || null,
+    mimeType: file.mimetype || null,
+    originalName: file.originalname || null,
+    bytes: typeof file.size === "number" ? file.size : null,
+    width: typeof file.width === "number" ? file.width : null,
+    height: typeof file.height === "number" ? file.height : null,
+    duration: typeof file.duration === "number" ? file.duration : null,
+    format: file.format || null,
+  };
+};
+
+const inferMediaMessageType = (file) => {
+  const mime = String(file?.mimetype || "");
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("image/")) return "image";
+  return null;
+};
+
+const sendMediaMessage = async ({ userId, conversationId, file, body }) => {
+  if (!file) throw new ApiError(400, "Media file is required");
+
+  const conversation = await ChatConversation.findOne({ _id: conversationId, participantIds: userId });
+  if (!conversation) throw new ApiError(404, "Conversation not found");
+
+  const messageType = inferMediaMessageType(file);
+  if (!messageType) throw new ApiError(400, "Unsupported media type");
+
+  const attachment = buildMediaAttachmentFromFile(file);
+  if (!attachment) throw new ApiError(500, "Failed to process uploaded media");
+
+  const trimmedBody = String(body || "").trim();
+  const previewBody = trimmedBody || (messageType === "image" ? "[Image]" : "[Video]");
+
+  const message = await ChatMessage.create({
+    conversationId: conversation._id,
+    senderId: userId,
+    messageType,
+    body: previewBody,
+    attachments: [attachment],
+    readBy: [userId],
+  });
+
+  conversation.lastMessageId = message._id;
+  conversation.lastMessageAt = message.createdAt;
+  await conversation.save();
+
+  await conversation.populate([
+    { path: "participantIds", select: "name email avatar university trustScore profileCompleteness" },
+    { path: "lastMessageId", select: "body senderId createdAt messageType attachments" },
   ]);
 
   const populatedMessage = await message.populate({ path: "senderId", select: "name avatar university trustScore" });
@@ -152,5 +223,6 @@ module.exports = {
   listConversations,
   getConversationMessages,
   sendMessage,
+  sendMediaMessage,
   markConversationRead,
 };

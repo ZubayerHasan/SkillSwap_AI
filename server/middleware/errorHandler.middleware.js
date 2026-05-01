@@ -35,6 +35,12 @@ const errorHandler = (err, req, res, next) => {
     message = "Token expired";
   }
 
+  // Multer (file upload) errors
+  if (err.name === "MulterError") {
+    statusCode = 400;
+    message = err.message || "Invalid upload";
+  }
+
   if (process.env.NODE_ENV === "development") {
     console.error(`[ERROR] ${statusCode} - ${message}`, err.stack);
   }

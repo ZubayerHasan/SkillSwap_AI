@@ -5,8 +5,10 @@ const fs = require("fs");
 // Ensure upload directories exist
 const avatarDir = path.join(__dirname, "..", "uploads", "avatars");
 const portfolioDir = path.join(__dirname, "..", "uploads", "portfolio");
+const chatDir = path.join(__dirname, "..", "uploads", "chat");
 fs.mkdirSync(avatarDir, { recursive: true });
 fs.mkdirSync(portfolioDir, { recursive: true });
+fs.mkdirSync(chatDir, { recursive: true });
 
 // --- Local disk storage (always available) ---
 const localAvatarStorage = multer.diskStorage({
@@ -25,9 +27,18 @@ const localPortfolioStorage = multer.diskStorage({
   },
 });
 
+const localChatStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, chatDir),
+  filename: (req, file, cb) => {
+    const uniqueName = `chat-${req.user._id}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  },
+});
+
 // --- Try Cloudinary, fall back to local ---
 let avatarStorage = localAvatarStorage;
 let portfolioStorage = localPortfolioStorage;
+let chatStorage = localChatStorage;
 
 try {
   const { CloudinaryStorage } = require("multer-storage-cloudinary");
@@ -56,6 +67,15 @@ try {
       params: {
         folder: "skillswap/portfolio",
         allowed_formats: ["jpg", "jpeg", "png", "webp", "pdf"],
+      },
+    });
+
+    chatStorage = new CloudinaryStorage({
+      cloudinary,
+      params: {
+        folder: "skillswap/chat",
+        resource_type: "auto",
+        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif", "mp4", "mov", "webm"],
       },
     });
 
@@ -94,4 +114,22 @@ const uploadPortfolio = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-module.exports = { uploadAvatar, uploadPortfolio };
+const chatMediaFilter = (req, file, cb) => {
+  const allowedImageMimes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"];
+  const allowedVideoMimes = ["video/mp4", "video/quicktime", "video/webm"];
+
+  if (allowedImageMimes.includes(file.mimetype) || allowedVideoMimes.includes(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+
+  cb(new Error("Only images (JPEG/PNG/WebP/GIF) and videos (MP4/MOV/WebM) are allowed"), false);
+};
+
+const uploadChatMedia = multer({
+  storage: chatStorage,
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
+  fileFilter: chatMediaFilter,
+});
+
+module.exports = { uploadAvatar, uploadPortfolio, uploadChatMedia };

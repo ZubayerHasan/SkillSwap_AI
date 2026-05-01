@@ -14,7 +14,12 @@ const app = express();
 app.set("trust proxy", Number(env.TRUST_PROXY) || 1);
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    // Allow the frontend (different origin in dev, e.g. :5173) to display images/videos served by this API (e.g. /uploads/*).
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(cors({
   origin: env.CLIENT_URL,
   credentials: true,

@@ -13,6 +13,7 @@ import {
   getConversationMessages,
   getMyConversations,
   markConversationRead,
+  sendConversationMediaMessage,
   sendConversationMessage,
   startConversation,
 } from "../../api/chatApi";
@@ -23,10 +24,19 @@ const ChatPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const messagesEndRef = useRef(null);
+  const mediaInputRef = useRef(null);
+  const loggedMissingAttachmentIdsRef = useRef(new Set());
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [draft, setDraft] = useState("");
+  const [pendingMedia, setPendingMedia] = useState(null);
   const [bootstrappingParticipantId, setBootstrappingParticipantId] = useState(location.state?.participantId || null);
   const socket = useSocketClient();
+
+  useEffect(() => {
+    return () => {
+      if (pendingMedia?.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+    };
+  }, [pendingMedia?.previewUrl]);
 
   const conversationsQuery = useQuery({
     queryKey: ["chat", "conversations"],
@@ -56,6 +66,27 @@ const ChatPage = () => {
 
   const messages = messagesQuery.data?.messages || [];
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    messages.forEach((message) => {
+      const isMedia = message?.messageType === "image" || message?.messageType === "video";
+      if (!isMedia) return;
+
+      const hasAttachments = Array.isArray(message?.attachments) && message.attachments.length > 0;
+      const firstUrl = message?.attachments?.[0]?.url;
+      const missingUsableAttachment = !hasAttachments || !firstUrl;
+      if (!missingUsableAttachment) return;
+
+      const id = String(message?._id || "");
+      if (!id || loggedMissingAttachmentIdsRef.current.has(id)) return;
+      loggedMissingAttachmentIdsRef.current.add(id);
+
+      // eslint-disable-next-line no-console
+      console.log("[chat] media message missing usable attachment", message);
+    });
+  }, [messages]);
+
   const startConversationMutation = useMutation({
     mutationFn: (participantId) => startConversation({ participantId }),
     onSuccess: (response, participantId) => {
@@ -80,19 +111,47 @@ const ChatPage = () => {
       const message = response.data.data.message;
       queryClient.setQueryData(["chat", "messages", variables.conversationId], (current) => {
         const currentMessages = current?.messages || [];
-        const alreadyExists = currentMessages.some((item) => String(item._id) === String(message._id));
-        return alreadyExists
-          ? current
-          : {
-              ...current,
-              messages: [...currentMessages, message],
-            };
+        const nextMessages = currentMessages.some((item) => String(item._id) === String(message._id))
+          ? currentMessages.map((item) => (String(item._id) === String(message._id) ? { ...item, ...message } : item))
+          : [...currentMessages, message];
+
+        return {
+          ...current,
+          messages: nextMessages,
+        };
       });
       queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
       setDraft("");
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Failed to send message");
+    },
+  });
+
+  const sendMediaMutation = useMutation({
+    mutationFn: ({ conversationId, file, body }) => sendConversationMediaMessage(conversationId, { file, body }),
+    onSuccess: (response, variables) => {
+      const message = response.data.data.message;
+      queryClient.setQueryData(["chat", "messages", variables.conversationId], (current) => {
+        const currentMessages = current?.messages || [];
+        const nextMessages = currentMessages.some((item) => String(item._id) === String(message._id))
+          ? currentMessages.map((item) => (String(item._id) === String(message._id) ? { ...item, ...message } : item))
+          : [...currentMessages, message];
+
+        return {
+          ...current,
+          messages: nextMessages,
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+      setDraft("");
+      if (pendingMedia?.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+      setPendingMedia(null);
+      if (mediaInputRef.current) mediaInputRef.current.value = "";
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to send media");
+      if (mediaInputRef.current) mediaInputRef.current.value = "";
     },
   });
 
@@ -135,13 +194,14 @@ const ChatPage = () => {
       if (String(conversationId) === String(selectedConversationId)) {
         queryClient.setQueryData(["chat", "messages", selectedConversationId], (current) => {
           const currentMessages = current?.messages || [];
-          const alreadyExists = currentMessages.some((item) => String(item._id) === String(message._id));
-          return alreadyExists
-            ? current
-            : {
-                ...current,
-                messages: [...currentMessages, message],
-              };
+          const nextMessages = currentMessages.some((item) => String(item._id) === String(message._id))
+            ? currentMessages.map((item) => (String(item._id) === String(message._id) ? { ...item, ...message } : item))
+            : [...currentMessages, message];
+
+          return {
+            ...current,
+            messages: nextMessages,
+          };
         });
       }
 
@@ -169,8 +229,20 @@ const ChatPage = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!selectedConversationId) return;
+
     const trimmedDraft = draft.trim();
-    if (!trimmedDraft || !selectedConversationId) return;
+
+    if (pendingMedia?.file) {
+      sendMediaMutation.mutate({
+        conversationId: selectedConversationId,
+        file: pendingMedia.file,
+        body: trimmedDraft || undefined,
+      });
+      return;
+    }
+
+    if (!trimmedDraft) return;
     sendMessageMutation.mutate({ conversationId: selectedConversationId, body: trimmedDraft });
   };
 
@@ -179,6 +251,28 @@ const ChatPage = () => {
 
     event.preventDefault();
     handleSubmit(event);
+  };
+
+  const handlePickMedia = () => {
+    if (!selectedConversationId) return;
+    mediaInputRef.current?.click();
+  };
+
+  const handleMediaSelected = (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedConversationId) return;
+
+    if (pendingMedia?.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+
+    const previewUrl = URL.createObjectURL(file);
+    const kind = file.type?.startsWith("video/") ? "video" : "image";
+    setPendingMedia({ file, previewUrl, kind, name: file.name, size: file.size, type: file.type });
+  };
+
+  const handleRemovePendingMedia = () => {
+    if (pendingMedia?.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+    setPendingMedia(null);
+    if (mediaInputRef.current) mediaInputRef.current.value = "";
   };
 
   return (
@@ -285,11 +379,40 @@ const ChatPage = () => {
                   ) : (
                     messages.map((message) => {
                       const isMine = String(message.senderId?._id || message.senderId) === String(user?._id);
+                      const firstAttachment = message.attachments?.[0] || null;
+                      const attachmentUrl = firstAttachment?.url;
+                      const attachmentMime = firstAttachment?.mimeType || "";
+                      const isVideo =
+                        Boolean(attachmentUrl) &&
+                        (message.messageType === "video" ||
+                          String(attachmentMime).startsWith("video/") ||
+                          /\.(mp4|mov|webm)(\?|$)/i.test(String(attachmentUrl)));
+                      const isImage =
+                        Boolean(attachmentUrl) &&
+                        (message.messageType === "image" ||
+                          String(attachmentMime).startsWith("image/") ||
+                          /\.(png|jpe?g|webp|gif)(\?|$)/i.test(String(attachmentUrl)));
 
                       return (
                         <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                           <div className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${isMine ? "bg-brand text-white rounded-br-md" : "bg-background-elevated text-text-primary rounded-bl-md"}`}>
-                            <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
+                            {isImage ? (
+                              <div className="space-y-2">
+                                <img src={attachmentUrl} alt={message.body || "Image"} className="rounded-xl max-h-64 w-auto" />
+                                {message.body && message.body !== "[Image]" && (
+                                  <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
+                                )}
+                              </div>
+                            ) : isVideo ? (
+                              <div className="space-y-2">
+                                <video src={attachmentUrl} controls className="rounded-xl max-h-72 w-full" />
+                                {message.body && message.body !== "[Video]" && (
+                                  <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
+                            )}
                             <p className={`mt-1 text-[11px] ${isMine ? "text-white/70" : "text-text-muted"}`}>
                               {message.createdAt ? new Date(message.createdAt).toLocaleString() : ""}
                             </p>
@@ -303,6 +426,38 @@ const ChatPage = () => {
 
                 <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-background-primary">
                   <div className="flex gap-3 items-end">
+                    <input
+                      ref={mediaInputRef}
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleMediaSelected}
+                      className="hidden"
+                      disabled={!selectedConversationId}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePickMedia}
+                      disabled={!selectedConversationId}
+                      loading={sendMediaMutation.isPending}
+                    >
+                      Attach
+                    </Button>
+                    {pendingMedia?.file && (
+                      <div className="flex items-end gap-3">
+                        <div className="rounded-xl border border-border bg-background-elevated p-2">
+                          {pendingMedia.kind === "video" ? (
+                            <video src={pendingMedia.previewUrl} className="h-16 w-24 rounded-lg object-cover" />
+                          ) : (
+                            <img src={pendingMedia.previewUrl} alt="Selected" className="h-16 w-16 rounded-lg object-cover" />
+                          )}
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={handleRemovePendingMedia}>
+                          Remove
+                        </Button>
+                      </div>
+                    )}
                     <textarea
                       rows={2}
                       value={draft}
@@ -313,7 +468,11 @@ const ChatPage = () => {
                       maxLength={2000}
                       disabled={!selectedConversationId}
                     />
-                    <Button type="submit" loading={sendMessageMutation.isPending} disabled={!selectedConversationId || !draft.trim()}>
+                    <Button
+                      type="submit"
+                      loading={sendMessageMutation.isPending || sendMediaMutation.isPending}
+                      disabled={!selectedConversationId || (sendMediaMutation.isPending || sendMessageMutation.isPending) || (!pendingMedia?.file && !draft.trim())}
+                    >
                       Send
                     </Button>
                   </div>

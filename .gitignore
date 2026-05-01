@@ -8,3 +8,6 @@ build/
 coverage/
 .vite/
 
+# Local uploads (dev fallback when Cloudinary isn't configured)
+server/uploads/
+
