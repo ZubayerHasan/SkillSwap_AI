@@ -29,8 +29,11 @@ app.use(cookieParser());
 // Logging
 if (env.NODE_ENV === "development") app.use(morgan("dev"));
 
-// Global rate limit
-app.use("/api", generalLimiter);
+// Global rate limit (skip auth routes)
+app.use("/api", (req, res, next) => {
+  if (req.path.startsWith("/auth")) return next();
+  return generalLimiter(req, res, next);
+});
 
 // Serve uploaded files (local disk fallback when Cloudinary is unavailable)
 const path = require("path");

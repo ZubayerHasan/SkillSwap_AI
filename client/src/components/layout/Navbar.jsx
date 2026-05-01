@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { to: "/discover", label: "Discover", icon: "🔍" },
   { to: "/skills", label: "Skills", icon: "🎯" },
   { to: "/exchanges", label: "Exchanges", icon: "🤝" },
+  { to: "/chat", label: "Chat", icon: "💬" },
   { to: "/availability", label: "Availability", icon: "📅" },
   { to: "/wallet", label: "Wallet", icon: "⚡" },
 ];

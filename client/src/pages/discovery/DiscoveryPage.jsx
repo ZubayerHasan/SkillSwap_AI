@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { discoverSkills } from "../../api/matchApi";
@@ -19,6 +20,7 @@ const PROF_LABELS = { 1: "Beginner", 2: "Intermediate", 3: "Expert" };
 
 const DiscoveryPage = () => {
   const user = useSelector(selectCurrentUser);
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState("");
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
@@ -146,9 +148,14 @@ const DiscoveryPage = () => {
                       {skill.description && <p className="text-xs text-text-secondary mt-2 line-clamp-2">{skill.description}</p>}
                     </div>
                     {skill.user?._id !== user?._id && (
-                      <Button onClick={() => setRequestTarget({ skillOffer: skill, user: skill.user })} variant="primary" size="sm" className="w-full">
-                        Send Exchange Request
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button onClick={() => setRequestTarget({ skillOffer: skill, user: skill.user })} variant="primary" size="sm" className="w-full">
+                          Exchange
+                        </Button>
+                        <Button onClick={() => navigate("/chat", { state: { participantId: skill.user._id } })} variant="ghost" size="sm" className="w-full">
+                          Message
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -35,9 +35,13 @@ try {
   const cfg = cloudinary.config();
 
   const isCloudinaryConfigured = cfg.cloud_name && cfg.api_key && cfg.api_secret;
+  const isPlaceholderCloudinaryConfig =
+    cfg.cloud_name === "dev_cloud" ||
+    cfg.api_key === "dev_key" ||
+    cfg.api_secret === "dev_secret";
 
   // Validate cloud name format (must be alphanumeric/underscores only)
-  if (isCloudinaryConfigured && /^[a-z0-9_-]+$/i.test(cfg.cloud_name)) {
+  if (isCloudinaryConfigured && !isPlaceholderCloudinaryConfig && /^[a-z0-9_-]+$/i.test(cfg.cloud_name)) {
     avatarStorage = new CloudinaryStorage({
       cloudinary,
       params: {
@@ -59,6 +63,8 @@ try {
   } else {
     if (!isCloudinaryConfigured) {
       console.log("📸 Cloudinary environment variables missing, using local disk storage");
+    } else if (isPlaceholderCloudinaryConfig) {
+      console.log("📸 Cloudinary is configured with placeholder dev values, using local disk storage");
     } else {
       console.log(`📸 Cloudinary cloud_name "${cfg.cloud_name}" appears invalid (regex check), using local disk storage`);
     }
