@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["student", "moderator", "admin"], default: "student" },
-    trustScore: { type: Number, default: 50, min: 0, max: 100 },
+    trustScore: { type: Number, default: 20, min: 0, max: 100 },
     currentBalance: { type: Number, default: 5, min: 0 },
     profileCompleteness: { type: Number, default: 0 },
 
