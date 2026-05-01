@@ -3,6 +3,8 @@ import axiosInstance from "./axiosInstance";
 export const getWallet = () => axiosInstance.get("/wallet/me");
 export const getTransactions = (params) => axiosInstance.get("/wallet/transactions", { params });
 export const exportTransactions = () => axiosInstance.get("/wallet/transactions/export", { responseType: "blob" });
+export const sendCredits = (data) => axiosInstance.post("/wallet/send", data);
+export const searchWalletUsers = (q) => axiosInstance.get("/wallet/users/search", { params: { q } });
 
 // Notifications
 export const getNotifications = (params) => axiosInstance.get("/notifications", { params });

@@ -20,6 +20,7 @@ import DiscoveryPage from "../pages/discovery/DiscoveryPage";
 import WalletPage from "../pages/wallet/WalletPage";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import ExchangesPage from "../pages/exchanges/ExchangesPage";
+import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import ChatPage from "../pages/chat/ChatPage";
 
 const AppRouter = () => (
@@ -43,6 +44,7 @@ const AppRouter = () => (
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
     <Route path="/exchanges" element={<ProtectedRoute><ExchangesPage /></ProtectedRoute>} />
     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+    <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
 
     {/* Redirects */}
     <Route path="/" element={<Navigate to="/dashboard" replace />} />

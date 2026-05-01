@@ -10,5 +10,6 @@ router.use("/wallet", require("./wallet.routes"));
 router.use("/notifications", require("./notification.routes"));
 router.use("/exchanges", require("./exchange.routes"));
 router.use("/chat", require("./chat.routes"));
+router.use("/admin", require("./admin.routes"));
 
 module.exports = router;
