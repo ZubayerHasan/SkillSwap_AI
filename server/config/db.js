@@ -16,8 +16,6 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(env.MONGO_URI, {
       serverSelectionTimeoutMS: 15000,
-      // Disable TLS for local Docker development
-      tls: env.NODE_ENV === "production",
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
 
