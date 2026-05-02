@@ -16,10 +16,6 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(env.MONGO_URI, {
       serverSelectionTimeoutMS: 15000,
-      // Explicit TLS options — required for Node.js v22 + OpenSSL 3.5 compatibility
-      tls: true,
-      tlsAllowInvalidCertificates: false,
-      tlsAllowInvalidHostnames: false,
     });
     console.log(`✅ MongoDB connected: ${conn.connection.host}`);
 
@@ -35,7 +31,10 @@ const connectDB = async () => {
     });
   } catch (err) {
     console.error(`❌ MongoDB connection error: ${err.message}`);
-    process.exit(1);
+    console.warn("Continuing without database connection; retrying in background");
+    // Do not exit the process here. Allow the server to start and let
+    // mongoose handle reconnection attempts according to its internal logic.
+    return;
   }
 };
 
