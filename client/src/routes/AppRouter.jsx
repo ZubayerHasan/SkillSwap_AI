@@ -14,13 +14,16 @@ import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 // Feature pages
 import DashboardPage from "../pages/dashboard/DashboardPage";
 import MyProfilePage from "../pages/profile/MyProfilePage";
+import PublicProfilePage from "../pages/profile/PublicProfilePage";
 import MySkillsPage from "../pages/skills/MySkillsPage";
 import AvailabilityPage from "../pages/availability/AvailabilityPage";
 import DiscoveryPage from "../pages/discovery/DiscoveryPage";
+import MatchDashboardPage from "../pages/discovery/MatchDashboardPage";
 import WalletPage from "../pages/wallet/WalletPage";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import ExchangesPage from "../pages/exchanges/ExchangesPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import ChatPage from "../pages/chat/ChatPage";
 
 const AppRouter = () => (
   <Routes>
@@ -36,12 +39,15 @@ const AppRouter = () => (
     {/* Protected */}
     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
     <Route path="/profile/me" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
+    <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
     <Route path="/skills" element={<ProtectedRoute><MySkillsPage /></ProtectedRoute>} />
     <Route path="/availability" element={<ProtectedRoute><AvailabilityPage /></ProtectedRoute>} />
     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
+    <Route path="/matches" element={<ProtectedRoute><MatchDashboardPage /></ProtectedRoute>} />
     <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
     <Route path="/exchanges" element={<ProtectedRoute><ExchangesPage /></ProtectedRoute>} />
+    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
     <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
 
     {/* Redirects */}

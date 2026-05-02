@@ -2,6 +2,7 @@ const SkillOffer = require("../models/SkillOffer.model");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiResponse = require("../utils/ApiResponse");
 const mongoose = require("mongoose");
+const { getSmartMatchesForUser } = require("../services/match.service");
 
 // GET /api/discovery/skills?q=&category=&level=&cursor=&limit=&userId=
 const discoverSkills = asyncHandler(async (req, res) => {
@@ -18,15 +19,14 @@ const discoverSkills = asyncHandler(async (req, res) => {
   const pipeline = [];
 
   if (q) {
-    // Use regex search — works without requiring a managed text index
     pipeline.push({
       $match: {
         ...matchStage,
         $or: [
           { displayName: { $regex: q, $options: "i" } },
-          { skillName:   { $regex: q, $options: "i" } },
+          { skillName: { $regex: q, $options: "i" } },
           { description: { $regex: q, $options: "i" } },
-          { category:    { $regex: q, $options: "i" } },
+          { category: { $regex: q, $options: "i" } },
         ],
       },
     });
@@ -43,12 +43,21 @@ const discoverSkills = asyncHandler(async (req, res) => {
       foreignField: "_id",
       as: "user",
       pipeline: [
-        { $project: { name: 1, university: 1, avatar: 1, trustScore: 1, profileCompleteness: 1 } },
+        {
+          $project: {
+            name: 1,
+            university: 1,
+            avatar: 1,
+            trustScore: 1,
+            profileCompleteness: 1,
+          },
+        },
       ],
     },
   });
-  // preserveNullAndEmptyArrays: false drops skills whose user no longer exists
-  pipeline.push({ $unwind: { path: "$user", preserveNullAndEmptyArrays: false } });
+  pipeline.push({
+    $unwind: { path: "$user", preserveNullAndEmptyArrays: false },
+  });
 
   const results = await SkillOffer.aggregate(pipeline);
 
@@ -56,7 +65,6 @@ const discoverSkills = asyncHandler(async (req, res) => {
   const items = hasMore ? results.slice(0, pageSize) : results;
   const nextCursor = hasMore ? items[items.length - 1]._id.toString() : null;
 
-  // Facet counts (category + level breakdown for sidebar filters)
   const facetMatch = { isActive: true };
   if (userId) facetMatch.userId = new mongoose.Types.ObjectId(userId);
 
@@ -64,15 +72,45 @@ const discoverSkills = asyncHandler(async (req, res) => {
     { $match: facetMatch },
     {
       $facet: {
-        categories: [{ $group: { _id: "$category", count: { $sum: 1 } } }, { $sort: { count: -1 } }],
-        levels:     [{ $group: { _id: "$proficiencyLevel", count: { $sum: 1 } } }, { $sort: { _id: 1 } }],
+        categories: [
+          { $group: { _id: "$category", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ],
+        levels: [
+          { $group: { _id: "$proficiencyLevel", count: { $sum: 1 } } },
+          { $sort: { _id: 1 } },
+        ],
       },
     },
   ]);
 
   res.status(200).json(
-    new ApiResponse(200, { results: items, nextCursor, facets: facets[0] }, "Discovery results")
+    new ApiResponse(
+      200,
+      { results: items, nextCursor, facets: facets[0] },
+      "Discovery results"
+    )
   );
 });
 
-module.exports = { discoverSkills };
+// GET /api/discovery/matches?limit=
+const getSmartMatches = asyncHandler(async (req, res) => {
+  const { limit = 20 } = req.query;
+
+  const results = await getSmartMatchesForUser(req.user._id, { limit });
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          results,
+          count: results.length,
+        },
+        "Smart matches fetched"
+      )
+    );
+});
+
+module.exports = { discoverSkills, getSmartMatches };
