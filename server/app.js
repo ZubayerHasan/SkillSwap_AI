@@ -14,7 +14,12 @@ const app = express();
 app.set("trust proxy", Number(env.TRUST_PROXY) || 1);
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    // Allow the frontend (different origin in dev, e.g. :5173) to display images/videos served by this API (e.g. /uploads/*).
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(cors({
   origin: env.CLIENT_URL,
   credentials: true,
@@ -29,8 +34,11 @@ app.use(cookieParser());
 // Logging
 if (env.NODE_ENV === "development") app.use(morgan("dev"));
 
-// Global rate limit
-app.use("/api", generalLimiter);
+// Global rate limit (skip auth routes)
+app.use("/api", (req, res, next) => {
+  if (req.path.startsWith("/auth")) return next();
+  return generalLimiter(req, res, next);
+});
 
 // Serve uploaded files (local disk fallback when Cloudinary is unavailable)
 const path = require("path");
