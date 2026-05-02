@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: "/skills", icon: "🎯", label: "My Skills" },
   { to: "/availability", icon: "📅", label: "Availability" },
   { to: "/discover", icon: "🔍", label: "Discover" },
+  { to: "/matches", icon: "✨", label: "Smart Matches" },
   { to: "/exchanges", icon: "🤝", label: "Exchanges" },
   { to: "/wallet", icon: "⚡", label: "Wallet" },
   { to: "/notifications", icon: "🔔", label: "Notifications" },
