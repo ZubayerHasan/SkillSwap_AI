@@ -13,6 +13,7 @@ import { formatDistanceToNow } from "../common/formatters";
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
   { to: "/discover", label: "Discover", icon: "🔍" },
+  { to: "/matches", label: "Matches", icon: "✨" },
   { to: "/skills", label: "Skills", icon: "🎯" },
   { to: "/exchanges", label: "Exchanges", icon: "🤝" },
   { to: "/availability", label: "Availability", icon: "📅" },

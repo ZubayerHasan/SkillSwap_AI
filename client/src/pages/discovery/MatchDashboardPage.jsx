@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import PageWrapper from "../../components/layout/PageWrapper";
+import Button from "../../components/common/Button";
 import { getSmartMatches } from "../../api/matchApi";
 import { createExchangeRequest } from "../../api/walletApi";
 
@@ -122,7 +124,7 @@ const MatchDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
+    <PageWrapper>
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -351,9 +353,12 @@ const MatchDashboardPage = () => {
                   ) : null}
 
                   <div className="flex flex-wrap gap-3">
-                    <button className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <Button
+                        variant="ghost"
+                        onClick={() => navigate(`/profile/${match.userId}`)}
+                              >
                       View Profile
-                    </button>
+                    </Button>
 
                     <button
                       onClick={() => handleRequestExchange(match)}
@@ -377,7 +382,7 @@ const MatchDashboardPage = () => {
           </div>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -14,6 +14,7 @@ import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 // Feature pages
 import DashboardPage from "../pages/dashboard/DashboardPage";
 import MyProfilePage from "../pages/profile/MyProfilePage";
+import PublicProfilePage from "../pages/profile/PublicProfilePage";
 import MySkillsPage from "../pages/skills/MySkillsPage";
 import AvailabilityPage from "../pages/availability/AvailabilityPage";
 import DiscoveryPage from "../pages/discovery/DiscoveryPage";
@@ -37,6 +38,7 @@ const AppRouter = () => (
     {/* Protected */}
     <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
     <Route path="/profile/me" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
+    <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>} />
     <Route path="/skills" element={<ProtectedRoute><MySkillsPage /></ProtectedRoute>} />
     <Route path="/availability" element={<ProtectedRoute><AvailabilityPage /></ProtectedRoute>} />
     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
