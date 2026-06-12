@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { store } from "./store";
 import AppRouter from "./routes/AppRouter";
 import ErrorBoundary from "./components/common/ErrorBoundary";
@@ -80,6 +81,7 @@ const AppInner = () => {
           error: { iconTheme: { primary: "#ff4d6d", secondary: "#1a1e2b" } },
         }}
       />
+      <SpeedInsights />
     </>
   );
 };
