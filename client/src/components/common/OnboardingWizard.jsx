@@ -58,17 +58,23 @@ const OnboardingWizard = ({ onComplete }) => {
   });
 
   const finishMut = useMutation({
-    mutationFn: async () => {
-      // Save availability
-      const slots = [];
-      Object.entries(availability).forEach(([key, checked]) => {
-        if (checked) {
-          const [day, periodIdx] = key.split("-").map(Number);
-          const period = PERIODS[periodIdx];
-          slots.push({ dayOfWeek: day, startMinute: period.startMinute, endMinute: period.endMinute });
+    mutationFn: async (skipAvailability = false) => {
+      // Save availability if not skipping
+      if (!skipAvailability) {
+        const slots = [];
+        Object.entries(availability).forEach(([key, checked]) => {
+          if (checked) {
+            const [day, periodIdx] = key.split("-").map(Number);
+            if (isNaN(day) || isNaN(periodIdx)) return;
+            const period = PERIODS[periodIdx];
+            if (!period) return;
+            slots.push({ dayOfWeek: day, startMinute: period.startMinute, endMinute: period.endMinute });
+          }
+        });
+        if (slots.length > 0) {
+          await updateAvailability({ slots });
         }
-      });
-      if (slots.length > 0) await updateAvailability({ availability: slots });
+      }
 
       // Mark onboarding complete
       await updateProfile({ hasCompletedOnboarding: true });
@@ -249,10 +255,10 @@ const OnboardingWizard = ({ onComplete }) => {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button variant="ghost" className="flex-1" onClick={() => finishMut.mutate()}>
+              <Button variant="ghost" className="flex-1" onClick={() => finishMut.mutate(true)}>
                 I'll set this later
               </Button>
-              <Button className="flex-1" loading={finishMut.isPending} onClick={() => finishMut.mutate()}>
+              <Button className="flex-1" loading={finishMut.isPending} onClick={() => finishMut.mutate(false)}>
                 Complete Setup
               </Button>
             </div>

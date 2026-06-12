@@ -35,7 +35,8 @@ const availabilitySchema = z.object({
         endMinute: z.number().int().min(0).max(1439),
       })
     )
-    .max(100),
+    .max(100)
+    .optional(),
   timezone: z.string().optional(),
 });
 

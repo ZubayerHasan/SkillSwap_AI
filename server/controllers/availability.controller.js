@@ -19,7 +19,7 @@ const computeBitfield = (slots) => {
 
 // PUT /api/availability
 const updateAvailability = asyncHandler(async (req, res) => {
-  const { slots, timezone } = req.body;
+  const { slots = [], timezone } = req.body;
   const bitfield = computeBitfield(slots);
 
   const user = await User.findByIdAndUpdate(

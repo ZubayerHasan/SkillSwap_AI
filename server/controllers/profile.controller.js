@@ -48,9 +48,31 @@ const getMyProfile = asyncHandler(async (req, res) => {
 
 // PUT /api/profile/me
 const updateProfile = asyncHandler(async (req, res) => {
-  const allowedFields = ["name", "bio", "university", "department", "contactPreference", "timezone"];
+  const allowedFields = [
+    "name",
+    "bio",
+    "university",
+    "department",
+    "contactPreference",
+    "timezone",
+    "hasCompletedOnboarding",
+    "availability"
+  ];
   const updates = {};
   allowedFields.forEach((f) => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+
+  if (updates.availability) {
+    const bits = Buffer.alloc(1260, 0);
+    updates.availability.forEach(({ dayOfWeek, startMinute, endMinute }) => {
+      for (let m = startMinute; m < endMinute; m++) {
+        const bitIndex = dayOfWeek * 1440 + m;
+        const byteIndex = Math.floor(bitIndex / 8);
+        const bitOffset = bitIndex % 8;
+        bits[byteIndex] |= 1 << bitOffset;
+      }
+    });
+    updates.availabilityBitfield = bits;
+  }
 
   const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true }).select("-password");
   if (!user) throw new ApiError(404, "User not found");
