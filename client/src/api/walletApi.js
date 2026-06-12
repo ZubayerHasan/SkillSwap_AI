@@ -19,3 +19,9 @@ export const acceptExchangeRequest = (id) => axiosInstance.put(`/exchanges/reque
 export const declineExchangeRequest = (id, reason) => axiosInstance.put(`/exchanges/requests/${id}/decline`, { reason });
 export const counterExchangeRequest = (id, data) => axiosInstance.put(`/exchanges/requests/${id}/counter`, data);
 export const getMyExchanges = (status) => axiosInstance.get("/exchanges", { params: { status } });
+export const getExchangeById = (id) => axiosInstance.get(`/exchanges/${id}`);
+export const confirmExchange = (id) => axiosInstance.put(`/exchanges/${id}/confirm`);
+
+// Public stats
+export const getPublicStats = () => axiosInstance.get("/stats");
+export const getPublicBroadcasts = () => axiosInstance.get("/discovery/broadcasts/public");

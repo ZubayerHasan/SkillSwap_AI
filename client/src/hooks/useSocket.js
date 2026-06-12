@@ -43,7 +43,7 @@ export const useSocket = (userId) => {
     notifySocketListeners();
 
     socketInstance.on("connect", () => {
-      console.log("🔌 Socket connected:", socketInstance.id);
+      // Socket connected
     });
 
     socketInstance.on("notification", (notification) => {

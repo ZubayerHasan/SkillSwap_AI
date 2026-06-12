@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema(
     trustScore: { type: Number, default: 50, min: 0, max: 100 },
     currentBalance: { type: Number, default: 5, min: 0 },
     profileCompleteness: { type: Number, default: 0 },
+    hasCompletedOnboarding: { type: Boolean, default: false },
 
     // Email verification
     emailVerificationToken: { type: String, default: null },

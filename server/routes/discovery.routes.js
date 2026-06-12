@@ -1,8 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const { discoverSkills, getSmartMatches } = require("../controllers/discovery.controller");
+const { getBroadcasts } = require("../controllers/skill.controller");
 const { authenticate } = require("../middleware/auth.middleware");
 
+// Public — no auth required
+router.get("/broadcasts/public", getBroadcasts);
+
+// Protected
 router.get("/skills", authenticate, discoverSkills);
 router.get("/matches", authenticate, getSmartMatches);
 

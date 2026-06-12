@@ -1,6 +1,9 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectIsAuthenticated, selectAuthLoading } from "../store/slices/authSlice";
 import ProtectedRoute from "./ProtectedRoute";
+import AdminRoute from "./AdminRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 
 // Auth pages
@@ -10,6 +13,10 @@ import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
 import VerifyEmailSentPage from "../pages/auth/VerifyEmailSentPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
+
+// Public
+import LandingPage from "../pages/LandingPage";
+import NotFoundPage from "../pages/NotFoundPage";
 
 // Feature pages
 import DashboardPage from "../pages/dashboard/DashboardPage";
@@ -25,8 +32,27 @@ import ExchangesPage from "../pages/exchanges/ExchangesPage";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import ChatPage from "../pages/chat/ChatPage";
 
+// Conditional home route — landing page for guests, dashboard for logged-in
+const HomeRoute = () => {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isLoading = useSelector(selectAuthLoading);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+};
+
 const AppRouter = () => (
   <Routes>
+    {/* Home — landing page or dashboard redirect */}
+    <Route path="/" element={<HomeRoute />} />
+
     {/* Public only */}
     <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
     <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
@@ -44,15 +70,15 @@ const AppRouter = () => (
     <Route path="/availability" element={<ProtectedRoute><AvailabilityPage /></ProtectedRoute>} />
     <Route path="/discover" element={<ProtectedRoute><DiscoveryPage /></ProtectedRoute>} />
     <Route path="/matches" element={<ProtectedRoute><MatchDashboardPage /></ProtectedRoute>} />
+    <Route path="/discovery/matches" element={<ProtectedRoute><MatchDashboardPage /></ProtectedRoute>} />
     <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
     <Route path="/exchanges" element={<ProtectedRoute><ExchangesPage /></ProtectedRoute>} />
     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-    <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+    <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
-    {/* Redirects */}
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    {/* 404 */}
+    <Route path="*" element={<NotFoundPage />} />
   </Routes>
 );
 

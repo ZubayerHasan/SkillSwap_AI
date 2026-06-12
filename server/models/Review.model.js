@@ -33,6 +33,13 @@ const reviewSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
+    endorsedSkills: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "SkillOffer",
+      },
+    ],
   },
   { timestamps: true }
 );

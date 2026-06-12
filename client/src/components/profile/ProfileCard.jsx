@@ -1,1 +1,0 @@
-<p>Trust Score: {user.trustScore}</p>

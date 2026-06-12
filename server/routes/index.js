@@ -12,5 +12,6 @@ router.use("/exchanges", require("./exchange.routes"));
 router.use("/reviews", require("./review.routes"));
 router.use("/chat", require("./chat.routes"));
 router.use("/admin", require("./admin.routes"));
+router.use("/stats", require("./stats.routes"));
 
 module.exports = router;
